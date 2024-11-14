@@ -138,7 +138,7 @@ class Signal_Utils_Rfsoc(Signal_Utils):
         if self.beamforming:
             txtd_base = self.beam_form(txtd_base)
             txtd = self.beam_form(txtd)
-
+        
         print("Dot product of transmitted signals: ", np.dot(txtd_base[0], txtd_base[1]))
 
         return (txtd_base, txtd)
@@ -608,7 +608,7 @@ class Signal_Utils_Rfsoc(Signal_Utils):
                 if plot_mode[i]=='h':
                     line[line_id][j], = ax[i][j].plot(self.t_trx[:n_samples_ch]*1e9, sigs[i])
                     line_id+=1
-                    ax[i][j].set_title("Channel-Mag-TD, Freq {}, TX ant {}, RX ant {}".format(self.freq_hop_list[j]/1e9, tx_ant_id, rx_ant_id))
+                    ax[i][j].set_title("Channel-Mag-TD, Freq {} GHz, TX ant {}, RX ant {}".format(self.freq_hop_list[j]/1e9, tx_ant_id, rx_ant_id))
                     ax[i][j].set_xlabel("Time (ns)")
                     ax[i][j].set_ylabel("Normalized Magnitude (dB)")
                 elif plot_mode[i]=='h01':
@@ -616,7 +616,7 @@ class Signal_Utils_Rfsoc(Signal_Utils):
                     line_id+=1
                     line[line_id][j], = ax[i][j].plot(self.t_trx[:n_samples_ch]*1e9, sigs[i][1], label='Antenna 1')
                     line_id+=1
-                    ax[i][j].set_title("Channel-Mag-TD, Freq {}, RX ant 0/1".format(self.freq_hop_list[j]/1e9))
+                    ax[i][j].set_title("Channel-Mag-TD, Freq {} GHz, RX ant 0/1".format(self.freq_hop_list[j]/1e9))
                     ax[i][j].set_xlabel("Time (ns)")
                     ax[i][j].set_ylabel("Normalized Magnitude (dB)")
                 elif plot_mode[i]=='h_sparse':

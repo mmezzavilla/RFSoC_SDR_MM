@@ -170,11 +170,11 @@ class Params_Class(object):
             # self.rx_chain.append('integrate')
             self.rx_chain.append('sync_time')
             # self.rx_chain.append('sync_freq')
-            # self.rx_chain.append('pilot_separate')
+            self.rx_chain.append('pilot_separate')
             # self.rx_chain.append('sys_res_deconv')
             self.rx_chain.append('channel_est')
             # self.rx_chain.append('sparse_est')
-            # self.rx_chain.append('channel_eq')
+            self.rx_chain.append('channel_eq')
 
 
 
