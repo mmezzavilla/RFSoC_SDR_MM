@@ -19,12 +19,13 @@ class Signal_Utils(General):
         self.n_samples_tx=getattr(params, 'n_samples_tx', self.n_samples)
         self.n_samples_rx=getattr(params, 'n_samples_rx', self.n_samples)
         self.n_samples_trx=getattr(params, 'n_samples_trx', min(self.n_samples_tx, self.n_samples_rx))
-        self.n_samples_ch=getattr(params, 'n_samples_ch', self.n_samples_trx)
+        self.sc_range_ch = getattr(params, 'sc_range_ch', [-1*self.n_samples_trx//2, self.n_samples_trx//2-1])
+        self.n_samples_ch=getattr(params, 'n_samples_ch', self.sc_range_ch[1] - self.sc_range_ch[0] + 1)
         self.nfft = getattr(params, 'nfft', 2 ** np.ceil(np.log2(self.n_samples)).astype(int))
         self.nfft_tx = getattr(params, 'nfft_tx', self.nfft)
         self.nfft_rx = getattr(params, 'nfft_rx', self.nfft)
         self.nfft_trx = getattr(params, 'nfft_trx', min(self.nfft_tx, self.nfft_rx))
-        self.nfft_ch = getattr(params, 'nfft_ch', self.nfft_trx)
+        self.nfft_ch = getattr(params, 'nfft_ch', self.n_samples_ch)
         self.snr=getattr(params, 'snr', None)
         self.sig_noise=getattr(params, 'sig_noise', None)
         self.sig_sel_id=getattr(params, 'sig_sel_id', None)
@@ -58,14 +59,17 @@ class Signal_Utils(General):
         self.t_tx = getattr(params, 't_tx', np.arange(0, self.n_samples_tx) / self.fs_tx)
         self.t_rx = getattr(params, 't_rx', np.arange(0, self.n_samples_rx) / self.fs_rx)
         self.t_trx = getattr(params, 't_trx', np.arange(0, self.n_samples_trx) / self.fs_trx)
-        self.freq = getattr(params, 'freq', ((np.arange(0, self.nfft) / self.nfft) - 0.5) * self.fs)
-        self.freq_tx = getattr(params, 'freq_tx', ((np.arange(0, self.nfft_tx) / self.nfft_tx) - 0.5) * self.fs_tx)
-        self.freq_rx = getattr(params, 'freq_rx', ((np.arange(0, self.nfft_rx) / self.nfft_rx) - 0.5) * self.fs_rx)
-        self.freq_trx = getattr(params, 'freq_trx', ((np.arange(0, self.nfft_trx) / self.nfft_trx) - 0.5) * self.fs_trx)
-        self.om = getattr(params, 'om', np.linspace(-np.pi, np.pi, self.nfft))
-        self.om_tx = getattr(params, 'om_tx', np.linspace(-np.pi, np.pi, self.nfft_tx))
-        self.om_rx = getattr(params, 'om_rx', np.linspace(-np.pi, np.pi, self.nfft_rx))
-        self.om_trx = getattr(params, 'om_trx', np.linspace(-np.pi, np.pi, self.nfft_trx))
+        self.t_ch = getattr(params, 't_ch', np.arange(0, self.n_samples_ch) / self.fs_trx)
+        self.freq = getattr(params, 'freq', np.linspace(-0.5, 0.5, self.nfft, endpoint=True) * self.fs)
+        self.freq_tx = getattr(params, 'freq_tx', np.linspace(-0.5, 0.5, self.nfft_tx, endpoint=True) * self.fs_tx)
+        self.freq_rx = getattr(params, 'freq_rx', np.linspace(-0.5, 0.5, self.nfft_rx, endpoint=True) * self.fs_rx)
+        self.freq_trx = getattr(params, 'freq_trx', np.linspace(-0.5, 0.5, self.nfft_trx, endpoint=True) * self.fs_trx)
+        self.freq_ch = getattr(params, 'freq_ch', self.freq_trx[(self.sc_range_ch[0]+self.nfft_trx//2):(self.sc_range_ch[1]+self.nfft_trx//2+1)])
+        self.om = getattr(params, 'om', np.linspace(-np.pi, np.pi, self.nfft, endpoint=True))
+        self.om_tx = getattr(params, 'om_tx', np.linspace(-np.pi, np.pi, self.nfft_tx, endpoint=True))
+        self.om_rx = getattr(params, 'om_rx', np.linspace(-np.pi, np.pi, self.nfft_rx, endpoint=True))
+        self.om_trx = getattr(params, 'om_trx', np.linspace(-np.pi, np.pi, self.nfft_trx, endpoint=True))
+        self.om_ch = getattr(params, 'om_ch', self.om_trx[(self.sc_range_ch[0]+self.nfft_trx//2):(self.sc_range_ch[1]+self.nfft_trx//2+1)])
 
 
     def lin_to_db(self, x, mode='pow'):
@@ -79,6 +83,22 @@ class Signal_Utils(General):
             return 10**(x/10)
         elif mode == 'mag':
             return 10**(x/20)
+        
+
+    def aoa_to_phase(self, aoa, wl=0.01, ant_dim=1, ant_dx_m=0, ant_dy_m=0):
+        if ant_dim == 1:
+            phase = 2 * np.pi * ant_dx_m / wl * np.sin(aoa)
+        elif ant_dim == 2:
+            phase = 2 * np.pi * ant_dx_m / wl * np.sin(aoa[0]) + 2 * np.pi * ant_dy_m / wl * np.sin(aoa[1])
+        return phase
+    
+
+    def phase_to_aoa(self, phase, wl=0.01, ant_dim=1, ant_dx_m=0, ant_dy_m=0):
+        if ant_dim == 1:
+            aoa = np.arcsin(phase * wl / (2 * np.pi * ant_dx_m))
+        elif ant_dim == 2:
+            aoa = np.array([np.arcsin(phase * wl / (2 * np.pi * ant_dx_m)), np.arcsin(phase * wl / (2 * np.pi * ant_dy_m))])
+        return aoa
         
 
     def upsample(self, signal, up=2):
@@ -977,8 +997,6 @@ class Signal_Utils(General):
         - The method uses Orthogonal Matching Pursuit (OMP) to find the sparse solution.        
         """
 
-        irx = 1
-        itx = 0
         # Number of paths stops when test error exceeds training error
         # by 1+cv_tol
         cv_tol = 0.1
@@ -1003,6 +1021,7 @@ class Signal_Utils(General):
         h_tr_mat = [[None for i in range(n_tx_ant)] for j in range(n_rx_ant)]
         dly_est_mat = [[None for i in range(n_tx_ant)] for j in range(n_rx_ant)]
         peaks_mat = [[None for i in range(n_tx_ant)] for j in range(n_rx_ant)]
+        npaths_est_mat = [[None for i in range(n_tx_ant)] for j in range(n_rx_ant)]
 
         for irx in range(n_rx_ant):
             for itx in range(n_tx_ant):
@@ -1082,7 +1101,8 @@ class Signal_Utils(General):
                     indices.append(idx)
 
                 # dly_est = dly_test[indices]
-                dly_est = np.array(list(dly_test[indices]) + [0]*(npaths-npaths_est))
+                # dly_est = np.array(list(dly_test[indices]) + [0]*(npaths-npaths_est))
+                dly_est = np.pad(dly_test[indices], (0, npaths - npaths_est), constant_values=0)
 
                 # Use least squares to estimate the coefficients
                 coeffs_est = np.linalg.lstsq(B[:,indices], H_tr, rcond=None)[0]
@@ -1092,8 +1112,10 @@ class Signal_Utils(General):
                 h_sparse = np.fft.ifft(H_sparse, axis=0)
 
                 scale = np.mean(np.abs(G))**2
-                peaks  = np.abs(coeffs_est)**2 * scale
-                peaks = np.array(list(peaks) + [0]*(npaths-npaths_est))
+                # peaks  = np.abs(coeffs_est)**2 * scale
+                peaks  = coeffs_est.copy() * np.sqrt(scale)
+                # peaks = np.array(list(peaks) + [0]*(npaths-npaths_est))
+                peaks = np.pad(peaks, (0, npaths - npaths_est), constant_values=0)
 
                 h_tr_mat[irx][itx] = h_tr.copy()
                 if len(dly_est) == npaths:
@@ -1106,12 +1128,15 @@ class Signal_Utils(General):
                 else:
                     # peaks_mat[irx][itx] = peaks.copy() + [0]*(npaths-npaths_est)
                     peaks_mat[irx][itx] = np.array([0] * npaths)
+
+                npaths_est_mat[irx][itx] = npaths_est
         
         h_tr_mat = np.array(h_tr_mat)
         dly_est_mat = np.array(dly_est_mat)
         peaks_mat = np.array(peaks_mat)
+        npaths_est_mat = np.array(npaths_est_mat)
 
-        return (h_tr_mat, dly_est_mat, peaks_mat)
+        return (h_tr_mat, dly_est_mat, peaks_mat, npaths_est_mat)
 
 
     def channel_estimate(self, txtd, rxtd_s, sys_response=None, sc_range_ch=[0,0], snr_est=100):
